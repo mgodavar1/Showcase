@@ -1,25 +1,61 @@
-db = DAL("sqlite://storage.sqlite")
+db = DAL('sqlite://storage.sqlite')
 
-db.define_table('user',
+#auth
+from gluon.tools import *
+auth = Auth(db)
+auth.define_tables()
+crud = Crud(db)
+
+db.define_table('person',
                 Field('name', unique=True),
                 Field('email'),
                 Field('phone'),
-                format = '%(name)s')
+                format = '%(person)s')
 
+
+#database for projects
 db.define_table('project',
-                Field('user_id', 'reference user'),
+                Field('person_id', 'reference person'),
                 Field('title'),
-                Field('description'))
+                Field('body', 'text'),
+                Field('created_on', 'datetime', default=request.now),
+                Field('created_by', 'reference auth_user', default=auth.user_id),
+                format='%(title)s')
 
-#User validators
-db.user.name.requires = [IS_NOT_EMPTY(), IS_NOT_IN_DB(db, db.user.name)]
-db.user.email.requires = [IS_NOT_EMPTY(), IS_EMAIL(error_message='Please enter a valid email!')]
-db.user.phone.requires = IS_MATCH('^1?((-)\d{3}-?|\(\d{3}\))\d{3}-?\d{4}$',
-         error_message='Please enter in form 1-123-456-7899')
+#db for documents on each project
+db.define_table('document',
+                Field('project_id', 'reference project'),
+                Field('name'),
+                Field('file', 'upload'),
+                Field('created_on', 'datetime', default=request.now),
+                Field('created_by', 'reference auth_user', default=auth.user_id),
+                format='%(name)s')
 
-#Project validators
-db.project.title.requires = IS_NOT_EMPTY()
-db.project.description.requires = IS_NOT_EMPTY()
+#db for posts on each project
+db.define_table('post',
+                Field('project_id', 'reference project'),
+                Field('body', 'text'),
+                Field('created_on', 'datetime', default=request.now),
+                Field('created_by', 'reference auth_user', default=auth.user_id))
+
+#Person validators
+db.person.name.requires = [IS_NOT_EMPTY(), IS_NOT_IN_DB(db, db.person.name)]
+db.person.email.requires = [IS_NOT_EMPTY(), IS_EMAIL(error_message='Please enter a valid email!')]
+db.person.phone.requires = IS_MATCH('^1?((-)\d{3}-?|\(\d{3}\))\d{3}-?\d{4}$', error_message='Please enter in form 1-123-456-7899')
 
 
-db.post.user_id.writable = db.post.user_id.readable = False
+db.project.title.requires = IS_NOT_IN_DB(db, 'project.title')
+db.project.body.requires = IS_NOT_EMPTY()
+db.project.person_id.readable = db.project.person_id.writable = False
+db.project.created_by.readable = db.project.created_by.writable = False
+db.project.created_on.readable = db.project.created_on.writable = False
+
+db.post.body.requires = IS_NOT_EMPTY()
+db.post.project_id.readable = db.post.project_id.writable = False
+db.post.created_by.readable = db.post.created_by.writable = False
+db.post.created_on.readable = db.post.created_on.writable = False
+
+db.document.name.requires = IS_NOT_IN_DB(db, 'document.name')
+db.document.project_id.readable = db.document.project_id.writable = False
+db.document.created_by.readable = db.document.created_by.writable = False
+db.document.created_on.readable = db.document.created_on.writable = False
