@@ -20,7 +20,7 @@ db.define_table('project',
                 Field('body', 'text'),
                 Field('image', 'upload'),
                 Field('created_on', 'datetime', default=request.now),
-                Field('created_by', 'reference auth_user', default=auth.user_id),
+                Field('created_by', 'reference auth_user', default=auth.user_id),		Field('category'),
                 format='%(title)s')
 
 #db for documents on each project
@@ -50,6 +50,7 @@ db.project.body.requires = IS_NOT_EMPTY()
 db.project.person_id.readable = db.project.person_id.writable = False
 db.project.created_by.readable = db.project.created_by.writable = False
 db.project.created_on.readable = db.project.created_on.writable = False
+db.project.category.requires = IS_IN_SET(["Music", "Applications", "Games", "Movies", "Other"], zero=None)
 
 db.post.body.requires = IS_NOT_EMPTY()
 db.post.project_id.readable = db.post.project_id.writable = False
